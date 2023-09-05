@@ -28,7 +28,7 @@ Allow to execute a SQL statements.
 
 ### Transaction
 
-Allow to run SQLite transactions.
+Allow to commit SQLite transactions.
 
 #### Methods of Transaction class
 
