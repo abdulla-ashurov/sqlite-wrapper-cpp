@@ -9,7 +9,7 @@ C++ Wrapper for SQLite
 
 int main() {
     try {
-        // Create database, which will return error like an exception code if something goes wrong
+        // Create database, which will return error like an exception if something goes wrong
         sqlite::Database db("test.db", sqlite::ErrorType::EXCEPTION);
 
         // Create database, which will return error like a status code if something goes wrong
@@ -54,6 +54,7 @@ int main() {
             statement.set("INSERT INTO Customers (customer_id, first_name, second_name, age) VALUES (?, ?, ?, ?);");
             
             // Inserting values
+            // First binding parameter index starts from 0.
             statement.bind(0, 4); // inserting customer_id
             statement.bind(1, "John"); // inserting first_name
             statement.bind(2, "Reinhardt"); // inserting second_name
@@ -61,16 +62,16 @@ int main() {
             sqlite::exec(statement);
 
             // Inserting null values
-            statement.set("INSERT INTO Customers (customer_id, first_name, second_name, age)");
+            statement.set("INSERT INTO Customers (customer_id, first_name, second_name, age) VALUES (?, ?, ?, ?);");
             statement.bind(0, 5);
             statement.bind(1, "Thompson");
             statement.bind_null(2);
             statement.bind_null(3);
             sqlite::exec(statement);
 
-            // Inserting multiples null values
-            statement.set("INSERT INTO Customers (customer_id, first_name, second_name, age)");
-            statement.bind_null(0, 3); // bind_null from 0 to 3 parameters
+            // Inserting multiple null values
+            statement.set("INSERT INTO Customers (customer_id, first_name, second_name, age) VALUES (?, ?, ?, ?);");
+            statement.bind_null(0, 3); // bind null from 0 to 3 parameters.
             sqlite::exec(statement);
         }
 
