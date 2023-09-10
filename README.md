@@ -4,8 +4,6 @@ C++ Wrapper for SQLite
 
 ## Example
 
-![img](./customers.png)
-
 ```cpp
 #include <iostream>
 
