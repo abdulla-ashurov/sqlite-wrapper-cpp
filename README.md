@@ -2,35 +2,95 @@
 
 C++ Wrapper for SQLite
 
-## Classes
+## Example
 
-### Database
+![img](./customers.png)
 
-Allow open/create database file.
+```cpp
+#include <iostream>
 
-#### Methods of Database class
+int main() {
+    try {
+        // Create database, which will return error like an exception code if something goes wrong
+        sqlite::Database db("test.db", sqlite::ErrorType::EXCEPTION);
 
-- `Database()` - default constructor.
-- `Database(const std::string &filename, OpenMode openMode = OpenMode::READWRITE)` - open/create a database file based on filename and openMode parameters. If only the first parameter is passed to the constructor then the database will be opened in READ|WRITE mode. Available combine multiple open modes.
-- `int open(const std::string &filename, OpenMode openMode = OpenMode::READWRITE)` - open/create a database file based on filename and openMode parameters. If only the first parameter is passed to the constructor then the database will be opened in READ|WRITE mode. Available combine multiple open modes.
-- `int close()` - close a database file and return a status code.
-- `execute(const std::string &sql_code)` - execute a SQL statement.
+        // Create database, which will return error like a status code if something goes wrong
+        // sqlite::Database db("test.db", sqlite::ErrorType::STATUS_CODE);
 
-### Statement
+        // Setup database
+        db.exec("DROP TABLE IF EXISTS Customers;");
+        db.exec("CREATE TABLE Customers(customer_id int, first_name varchar(100), second_name varchar(100), age int);");
 
-Allow to execute a SQL statements.
+        sqlite::Result result;
 
-#### Methods of Statement class
+        // Direct execution
+        {
+            sqlite::exec(db, "INSERT INTO Customers VALUES (1, 'John', 'Doe', 31);");
+            sqlite::exec(db, "INSERT INTO Customers VALUES (2, 'Robert', 'Luna', 22);");
+            sqlite::exec(db, "INSERT INTO Customers VALUES (3, 'David', 'Robinson', 22);");
+        }
 
-- `Statement(const Database &db, const std::string &sql_code)` - create a SQL statement.
-- `void bind(const size_t argc, const std::string &argv...)` - change all `?` symbols in SQL statement based on `argc` (argument count) and `argv` (argument values).
-- `execute()` - execute a SQL statement.
+        // Accessing results by column name or number
+        {
+            result = sqlite::exec(db, "SELECT first_name, age FROM Customers WHERE first_name = 'John' AND age = 31;");
 
-### Transaction
+            // Accessing result by column name
+            std::cout << result.get<string>("first_name") << " " << result.get<int>("age") << std::endl;
 
-Allow to commit SQLite transactions.
+            // Accessing result by column number
+            std::cout << result.get<string>(0) << " " << result.get<int>(1) << std::endl; // column number starts from 0.
+        }
 
-#### Methods of Transaction class
+        // Accessing results row by row
+        {
+            result = sqlite::exec(db, "SELECT * FROM Customers;");
+            for (size_t i = 0; i < result.rows.length; i++) {
+                std::cout << result.get<string>("first_name") << " " << result.get<string>("second_name")<< " " << result.get<int>("age") << std::endl;
+                result.next();
+            }
+        }
 
-- `Transaction(const Database &db)` - create a transaction.
-- `int commit()` - commit transaction.
+        // Binding parameters
+        {
+            sqlite::Statement statement(db);
+            statement.set("INSERT INTO Customers (customer_id, first_name, second_name, age) VALUES (?, ?, ?, ?);");
+            
+            // Inserting values
+            statement.bind(0, 4); // inserting customer_id
+            statement.bind(1, "John"); // inserting first_name
+            statement.bind(2, "Reinhardt"); // inserting second_name
+            statement.bind(3, 29); // inserting age
+            sqlite::exec(statement);
+
+            // Inserting null values
+            statement.set("INSERT INTO Customers (customer_id, first_name, second_name, age)");
+            statement.bind(0, 5);
+            statement.bind(1, "Thompson");
+            statement.bind_null(2);
+            statement.bind_null(3);
+            sqlite::exec(statement);
+
+            // Inserting multiples null values
+            statement.set("INSERT INTO Customers (customer_id, first_name, second_name, age)");
+            statement.bind_null(0, 3); // bind_null from 0 to 3 parameters
+            sqlite::exec(statement);
+        }
+
+        // Transactions
+        {
+            {
+                std::cout << "Deleting all rows from Customers table" << std::endl;
+                sqlite::Transaction tx(db);
+                sqlite::exec(db, "DELETE FROM Customers;");
+                // transaction will be rolled back if we don't call tx.commit();
+            }
+            result = sqlite::exec("SELECT * FROM Customers;");
+            std::cout << "still have " <<result.rows.length << " rows" << std::endl;
+        }
+    } catch (Exception &e) {
+        std::cout << "exception: " << e.what() << std::endl;
+    }
+
+    return 0;
+}
+```
