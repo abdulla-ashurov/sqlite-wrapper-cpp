@@ -9,16 +9,16 @@ C++ Wrapper for SQLite
 
 sqlite::Error setup(const sqlite::Database &db) {
     sqlite::Error err = sqlite::exec(db, "DROP TABLE IF EXISTS Customers;");
-    if (err.code()) {
+    if (err) {
         return err;
     }
 
     err = sqlite::exec(db, "CREATE TABLE Customers(customer_id int, first_name varchar(100), second_name varchar(100), age int);");
-    if (err.code()) {
+    if (err) {
         return err;
     }
 
-    return sqlite::OK();
+    return sqlite::OK;
 }
 
 int main() {
