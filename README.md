@@ -7,87 +7,112 @@ C++ Wrapper for SQLite
 ```cpp
 #include <iostream>
 
+sqlite::Error setup(const sqlite::Database &db) {
+    sqlite::Error err = sqlite::exec(db, "DROP TABLE IF EXISTS Customers;");
+    if (err.code()) {
+        return err;
+    }
+
+    err = sqlite::exec(db, "CREATE TABLE Customers(customer_id int, first_name varchar(100), second_name varchar(100), age int);");
+    if (err.code()) {
+        return err;
+    }
+
+    return sqlite::OK();
+}
+
 int main() {
-    try {
-        // Create database, which will return error like an exception if something goes wrong
-        sqlite::Database db("test.db", sqlite::ErrorType::EXCEPTION);
+    // Create database, which will return error like a status code if something goes wrong
+    sqlite::Error err = sqlite::Database db("test.db", sqlite::ErrorTypes.STATUS_CODE);
+    if (err) { std::cerr << err.msg() << std::endl; return err; }
 
-        // Create database, which will return error like a status code if something goes wrong
-        // sqlite::Database db("test.db", sqlite::ErrorType::STATUS_CODE);
+    // try {
+    //     // Create database, which will return error like an exception if something goes wrong
+    //     sqlite::Database db("test.db", sqlite::ErrorTypes.EXCEPTION);
+    // } catch (std::Exception &e) {
+    //     std::cout << "exception: " << e.what() << std::endl;;
+    // }
 
-        // Setup database
-        db.exec("DROP TABLE IF EXISTS Customers;");
-        db.exec("CREATE TABLE Customers(customer_id int, first_name varchar(100), second_name varchar(100), age int);");
+    err = setup(db);
+    if (err) { 
+        std::cerr << err.msg() << std::endl;
+        return err; 
+    }
 
-        sqlite::Result result;
+    sqlite::Results results;
 
-        // Direct execution
-        {
-            sqlite::exec(db, "INSERT INTO Customers VALUES (1, 'John', 'Doe', 31);");
-            sqlite::exec(db, "INSERT INTO Customers VALUES (2, 'Robert', 'Luna', 22);");
-            sqlite::exec(db, "INSERT INTO Customers VALUES (3, 'David', 'Robinson', 22);");
+    // Direct execution
+    {
+        if (err = sqlite::exec(db, "INSERT INTO Customers VALUES (1, 'John', 'Doe', 31);"); err) { return err; }
+        if (err = sqlite::exec(db, "INSERT INTO Customers VALUES (2, 'Robert', 'Luna', 22);"); err ) { return err; }
+        if (err = sqlite::exec(db, "INSERT INTO Customers VALUES (3, 'David', 'Robinson', 22);"); err) { return err; }
+    }
+
+    // Accessing results by column name or number
+    {
+        if (err = sqlite::exec(db, "SELECT first_name, age FROM Customers WHERE first_name = 'John' AND age = 31;", results); err) { 
+            return err; 
+        }
+ 
+        // Accessing result by column name
+        std::cout << result.get<string>("first_name") << " " << result.get<int>("age") << std::endl;
+
+        // Accessing result by column number
+        std::cout << result.get<string>(0) << " " << result.get<int>(1) << std::endl; // column number starts from 0.
+    }
+
+    // Accessing results row by row
+    {
+        
+        if (err = sqlite::exec(db, "SELECT * FROM Customers;", results); err) {
+            return err;
         }
 
-        // Accessing results by column name or number
-        {
-            result = sqlite::exec(db, "SELECT first_name, age FROM Customers WHERE first_name = 'John' AND age = 31;");
-
-            // Accessing result by column name
-            std::cout << result.get<string>("first_name") << " " << result.get<int>("age") << std::endl;
-
-            // Accessing result by column number
-            std::cout << result.get<string>(0) << " " << result.get<int>(1) << std::endl; // column number starts from 0.
+        for (sqlite::Results_iterator it = results.begin(); it != results.end(); it++) {
+            std::cout << it->get<std::std::string>("first_name") << " " << it->get<int>("age") << std::endl;
         }
+    }
 
-        // Accessing results row by row
+    // Binding parameters
+    {
+        // Inserting values
         {
-            result = sqlite::exec(db, "SELECT * FROM Customers;");
-            for (size_t i = 0; i < result.rows.length; i++) {
-                std::cout << result.get<string>("first_name") << " " << result.get<string>("second_name")<< " " << result.get<int>("age") << std::endl;
-                result.next();
-            }
-        }
-
-        // Binding parameters
-        {
-            sqlite::Statement statement(db);
-            statement.set("INSERT INTO Customers (customer_id, first_name, second_name, age) VALUES (?, ?, ?, ?);");
+            sqlite::Statement statement(db, "INSERT INTO Customers (customer_id, first_name, second_name, age) VALUES (?, ?, ?, ?);");
             
-            // Inserting values
             // First binding parameter index starts from 0.
             statement.bind(0, 4); // inserting customer_id
             statement.bind(1, "John"); // inserting first_name
             statement.bind(2, "Reinhardt"); // inserting second_name
             statement.bind(3, 29); // inserting age
             sqlite::exec(statement);
+        }
 
-            // Inserting null values
-            statement.set("INSERT INTO Customers (customer_id, first_name, second_name, age) VALUES (?, ?, ?, ?);");
+        // Inserting null values
+        {
+            // Missed values will be automatically bind with null
+            sqlite::Statement statement(db, "INSERT INTO Customers (customer_id, first_name, second_name, age) VALUES (?, ?, ?, ?);");
             statement.bind(0, 5);
             statement.bind(1, "Thompson");
-            statement.bind_null(2);
-            statement.bind_null(3);
-            sqlite::exec(statement);
-
-            // Inserting multiple null values
-            statement.set("INSERT INTO Customers (customer_id, first_name, second_name, age) VALUES (?, ?, ?, ?);");
-            statement.bind_null(0, 3); // bind null from 0 to 3 parameters.
             sqlite::exec(statement);
         }
-
-        // Transactions
+        
+        // Inserting multiple null values
         {
-            {
-                std::cout << "Deleting all rows from Customers table" << std::endl;
-                sqlite::Transaction tx(db);
-                sqlite::exec(db, "DELETE FROM Customers;");
-                // transaction will be rolled back if we don't call tx.commit();
-            }
-            result = sqlite::exec("SELECT * FROM Customers;");
-            std::cout << "still have " <<result.rows.length << " rows" << std::endl;
+            sqlite::Statement statement(db, "INSERT INTO Customers (customer_id, first_name, second_name, age) VALUES (?, ?, ?, ?);");
+            sqlite::exec(statement);
         }
-    } catch (Exception &e) {
-        std::cout << "exception: " << e.what() << std::endl;
+    }
+
+    // Transactions
+    {
+        {
+            std::cout << "Deleting all rows from Customers table" << std::endl;
+            sqlite::Transaction tx(db);
+            sqlite::exec(db, "DELETE FROM Customers;");
+            // transaction will be rolled back if we don't call tx.commit();
+        }
+        result = sqlite::exec("SELECT * FROM Customers;");
+        std::cout << "still have " <<result.rows.length << " rows" << std::endl;
     }
 
     return 0;
