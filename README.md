@@ -24,7 +24,10 @@ sqlite::Error setup(const sqlite::Database &db) {
 int main() {
     // Create database, which will return error like a status code if something goes wrong
     sqlite::Error err = sqlite::Database db("test.db", sqlite::ErrorTypes.STATUS_CODE);
-    if (err) { std::cerr << err.msg() << std::endl; return err; }
+    if (err) { 
+        std::cerr << err.msg() << std::endl;
+        return err; 
+    }
 
     // try {
     //     // Create database, which will return error like an exception if something goes wrong
@@ -50,9 +53,7 @@ int main() {
 
     // Accessing results by column name or number
     {
-        if (err = sqlite::exec(db, "SELECT first_name, age FROM Customers WHERE first_name = 'John' AND age = 31;", results); err) { 
-            return err; 
-        }
+        if (err = sqlite::exec(db, "SELECT first_name, age FROM Customers WHERE first_name = 'John' AND age = 31;", results); err) { return err; }
  
         // Accessing result by column name
         std::cout << result.get<string>("first_name") << " " << result.get<int>("age") << std::endl;
@@ -64,9 +65,7 @@ int main() {
     // Accessing results row by row
     {
         
-        if (err = sqlite::exec(db, "SELECT * FROM Customers;", results); err) {
-            return err;
-        }
+        if (err = sqlite::exec(db, "SELECT * FROM Customers;", results); err) { return err; }
 
         for (sqlite::Results_iterator it = results.begin(); it != results.end(); it++) {
             std::cout << it->get<std::std::string>("first_name") << " " << it->get<int>("age") << std::endl;
@@ -84,7 +83,7 @@ int main() {
             statement.bind(1, "John"); // inserting first_name
             statement.bind(2, "Reinhardt"); // inserting second_name
             statement.bind(3, 29); // inserting age
-            sqlite::exec(statement);
+            if (err = sqlite::exec(statement); err) { return err; };
         }
 
         // Inserting null values
@@ -93,13 +92,13 @@ int main() {
             sqlite::Statement statement(db, "INSERT INTO Customers (customer_id, first_name, second_name, age) VALUES (?, ?, ?, ?);");
             statement.bind(0, 5);
             statement.bind(1, "Thompson");
-            sqlite::exec(statement);
+            if (err = sqlite::exec(statement); err) { return err; };
         }
         
         // Inserting multiple null values
         {
             sqlite::Statement statement(db, "INSERT INTO Customers (customer_id, first_name, second_name, age) VALUES (?, ?, ?, ?);");
-            sqlite::exec(statement);
+            if (err = sqlite::exec(statement); err) { return err; };
         }
     }
 
@@ -108,11 +107,11 @@ int main() {
         {
             std::cout << "Deleting all rows from Customers table" << std::endl;
             sqlite::Transaction tx(db);
-            sqlite::exec(db, "DELETE FROM Customers;");
+            if (err = sqlite::exec(db, "DELETE FROM Customers;"); err) { return err; };
             // transaction will be rolled back if we don't call tx.commit();
         }
-        result = sqlite::exec("SELECT * FROM Customers;");
-        std::cout << "still have " <<result.rows.length << " rows" << std::endl;
+        if (err = sqlite::exec(db, "SELECT * FROM Customers;", results); err) { return err; };
+        std::cout << "still have " << results.end() - results.begin() << " rows" << std::endl;
     }
 
     return 0;
