@@ -97,6 +97,7 @@ int main() {
         
         // Inserting multiple null values
         {
+            // Missed values will be automatically bind with null
             sqlite::Statement statement(db, "INSERT INTO Customers (customer_id, first_name, second_name, age) VALUES (?, ?, ?, ?);");
             if (err = sqlite::exec(statement); err) { return err; };
         }
