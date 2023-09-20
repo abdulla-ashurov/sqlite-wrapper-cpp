@@ -65,6 +65,10 @@ int main() {
 
         // Accessing result by not existent column name will be returned as null
         std::cout << result.get<string>("not_existent") << std::endl;
+
+        // Accessing result by not existent column number will be returned as null
+        const size_t not_existent_column_number = 10;
+        std::cout << result.get<string>(not_existent_column_number) << std::endl;
     }
 
     // Accessing results row by row
