@@ -116,8 +116,9 @@ int main() {
         {
             std::cout << "Deleting all rows from Customers table" << std::endl;
             // By default transaction level is sqlite::TRANSACTION_LEVELS.DEFERRED
-            // If you want to specify another transaction levels you need to pass the transaction level
-            // like a second argument to sqlite::TRANSACTION constructor.
+            // If you want to specify an another transaction level you need to pass the transaction level
+            // like a second argument to sqlite::TRANSACTION constructor:
+            // sqlite::Transaction tx(db, sqlite::TRANSACTION_LEVELS.IMMEDIATE);
             sqlite::Transaction tx(db);
             if (err = sqlite::exec(db, "DELETE FROM Customers;"); err) { return err; };
             // transaction will be rolled back if we don't call tx.commit();
