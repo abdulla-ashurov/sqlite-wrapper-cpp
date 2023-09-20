@@ -54,12 +54,17 @@ int main() {
     // Accessing results by column name or number
     {
         if (err = sqlite::exec(db, "SELECT first_name, age FROM Customers WHERE first_name = 'John' AND age = 31;", results); err) { return err; }
- 
-        // Accessing result by column name
-        std::cout << result.get<string>("first_name") << " " << result.get<int>("age") << std::endl;
 
-        // Accessing result by column number
-        std::cout << result.get<string>(0) << " " << result.get<int>(1) << std::endl; // column number starts from 0.
+        if (results.count()) {
+            // Accessing result by column name
+            std::cout << result.get<string>("first_name") << " " << result.get<int>("age") << std::endl;
+
+            // Accessing result by column number
+            std::cout << result.get<string>(0) << " " << result.get<int>(1) << std::endl; // column number starts from 0.
+        }
+
+        // Accessing result by not existent column name will be returned as null
+        std::cout << result.get<string>("not_existent") << std::endl;
     }
 
     // Accessing results row by row
