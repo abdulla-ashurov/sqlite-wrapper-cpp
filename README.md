@@ -124,7 +124,7 @@ int main() {
             // transaction will be rolled back if we don't call tx.commit();
         }
         if (err = sqlite::exec(db, "SELECT * FROM Customers;", results); err) { return err; };
-        std::cout << "still have " << results.end() - results.begin() << " rows" << std::endl;
+        std::cout << "still have " << results.count() << " rows" << std::endl;
     }
 
     return 0;
