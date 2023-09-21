@@ -57,18 +57,18 @@ int main() {
 
         if (results.count()) {
             // Accessing result by column name
-            std::cout << result.get<string>("first_name") << " " << result.get<int>("age") << std::endl;
+            std::cout << results.get<string>("first_name") << " " << results.get<int>("age") << std::endl;
 
             // Accessing result by column number
-            std::cout << result.get<string>(0) << " " << result.get<int>(1) << std::endl; // column number starts from 0.
+            std::cout << results.get<string>(0) << " " << results.get<int>(1) << std::endl; // column number starts from 0.
         }
 
         // Accessing result by not existent column name will be returned as null
-        std::cout << result.get<string>("not_existent") << std::endl;
+        std::cout << results.get<string>("not_existent") << std::endl;
 
         // Accessing result by not existent column number will be returned as null
         const size_t not_existent_column_number = 10;
-        std::cout << result.get<string>(not_existent_column_number) << std::endl;
+        std::cout << results.get<string>(not_existent_column_number) << std::endl;
     }
 
     // Accessing results row by row
