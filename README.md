@@ -2,6 +2,10 @@
 
 C++ Wrapper for SQLite
 
+## Architecture of interfaces
+
+![architecture of interfaces](./architecture/demo.drawio.png)
+
 ## Example
 
 ```cpp
