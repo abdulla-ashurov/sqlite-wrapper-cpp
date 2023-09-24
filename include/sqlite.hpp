@@ -2,7 +2,6 @@
 #define __SQLITE_HPP__
 
 #include <string>
-#include <vector>
 
 namespace sqlite {
     class Database {
