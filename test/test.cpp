@@ -8,11 +8,11 @@ public:
 
     TestSetup(): db("test.db") {
         if(sqlite::exec(db, "DROP TABLE IF EXISTS Customers;")) {
-            std::cerr << "Drop test table" << std::endl;
+            std::cerr << "Drop Customers table" << std::endl;
         }
 
         if (sqlite::exec(db, "CREATE TABLE Customers(id int, name varchar(100), age int);")) {
-            std::cerr << "Cannot create test table" << std::endl;
+            std::cerr << "Cannot create Customers table" << std::endl;
         }
     }
 };
