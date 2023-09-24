@@ -15,6 +15,7 @@ namespace sqlite {
         Error(const int code, const std::string& msg);
         const int code() const;
         const std::string& msg() const;
+        operator bool() const;
     };
 
     class Statement {
@@ -58,7 +59,10 @@ namespace sqlite {
         const iterator& end() const;
     };
 
-    const Error exec(Database& db, const std::string& sql);
+    const Error exec(Database& db, const std::string& sql, const Results &res = Results());
+    const Error exec(Statement& st, const Results &res = Results());
+
+    const Error OK(0, "");
 };
 
 #endif // __SQLITE_HPP__
