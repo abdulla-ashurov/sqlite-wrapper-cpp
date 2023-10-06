@@ -33,3 +33,10 @@
 
 # VSCode folders
 .vscode
+
+# Build folder
+build/
+
+# Test files
+test.db
+
