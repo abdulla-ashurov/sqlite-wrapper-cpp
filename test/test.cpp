@@ -44,11 +44,11 @@ TEST_CASE("Test Results class") {
 //         const int expected_id = 1, expected_age = 29;
 //         const std::string expected_name = "John";
 
-//         sqlite::Statement statement(setup.db, "INSERT INTO Customers (id, name, age) VALUES (?, ?, ?);");
+//         sqlite::Statement statement("INSERT INTO Customers (id, name, age) VALUES (?, ?, ?);");
 //         statement.bind(0, expected_id); // inserting id
 //         statement.bind(1, expected_name); // inserting name
 //         statement.bind(2, expected_age); // inserting age
-//         sqlite::exec(statement);
+//         sqlite::exec(setup.db, statement);
 
 //         sqlite::Results results;
 //         sqlite::exec(setup.db, "SELECT name, age FROM Customers WHERE name = 'John' AND age = 29;", results);
@@ -64,11 +64,11 @@ TEST_CASE("Test Results class") {
     //         const int expected_id = 1;
     //         const std::string expected_name = "John";
 
-    //         sqlite::Statement statement(setup.db, "INSERT INTO Customers (id, name, age) VALUES (?, ?, ?);");
+    //         sqlite::Statement statement("INSERT INTO Customers (id, name, age) VALUES (?, ?, ?);");
     //         statement.bind(0, expected_id); // inserting id
     //         statement.bind(1, expected_name); // inserting name
     //         // Missed age parameter
-    //         sqlite::exec(statement);
+    //         sqlite::exec((setup.db, statement);
 
     //         sqlite::Results results;
     //         sqlite::exec(setup.db, "SELECT name, age FROM Customers WHERE name = 'John' AND age = 29;", results);
@@ -82,9 +82,9 @@ TEST_CASE("Test Results class") {
     //     SECTION("It can automatically bind with null multiple missed parameters") {
     //         TestSetup setup;
 
-    //         sqlite::Statement statement(setup.db, "INSERT INTO Customers (id, name, age) VALUES (?, ?, ?);");
+    //         sqlite::Statement statement("INSERT INTO Customers (id, name, age) VALUES (?, ?, ?);");
     //         // Missed id, name, age parameters
-    //         sqlite::exec(statement);
+    //         sqlite::exec((setup.db, statement);
 
     //         sqlite::Results results;
     //         sqlite::exec(setup.db, "SELECT name, age FROM Customers WHERE name = 'John' AND age = 29;", results);
@@ -100,9 +100,9 @@ TEST_CASE("Test Results class") {
     //         const int invalid_column_id = 10, value = 1;
     //         const std::string expected_err_msg = "An invalid column id";
 
-    //         sqlite::Statement statement(setup.db, "INSERT INTO Customers (id, name, age) VALUES (?, ?, ?);");
+    //         sqlite::Statement statement("INSERT INTO Customers (id, name, age) VALUES (?, ?, ?);");
     //         statement.bind(invalid_column_id, value);
-    //         sqlite::Error err = sqlite::exec(statement);
+    //         sqlite::Error err = sqlite::exec((setup.db, statement);
     //         REQUIRE(err.msg() == expected_err_msg);
     //     }
 // }

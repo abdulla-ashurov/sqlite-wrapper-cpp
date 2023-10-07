@@ -97,10 +97,10 @@ int main() {
         // Inserting null values
         {
             // Missed values will be automatically bind with null
-            sqlite::Statement statement(db, "INSERT INTO Customers (customer_id, first_name, second_name, age) VALUES (?, ?, ?, ?);");
+            sqlite::Statement statement("INSERT INTO Customers (customer_id, first_name, second_name, age) VALUES (?, ?, ?, ?);");
             statement.bind(0, 5);
             statement.bind(1, "Thompson");
-            if (err = sqlite::exec(statement); err) { return err; };
+            if (err = sqlite::exec(db, statement); err) { return err; };
         }
         
         // Inserting multiple null values

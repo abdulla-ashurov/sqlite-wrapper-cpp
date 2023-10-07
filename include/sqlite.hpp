@@ -111,7 +111,7 @@ namespace sqlite {
 
     class Statement {
     public:
-        Statement(Database &db, const std::string &sql);
+        Statement(const char *sql);
 
         template <typename T>
         const Error &bind(const size_t index, const T &value);
