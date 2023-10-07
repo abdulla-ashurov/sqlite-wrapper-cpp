@@ -12,16 +12,47 @@ namespace sqlite {
     };
 
     class Error {
-    public:
-        Error(const int code, const char *msg) {}
-        const int code() const;
-        const std::string &msg() const;
-        operator bool() const {
+    private:
+        void copy(const Error& other) {
+            code = other.code;
+            if (other.msg) {
+                msg = new char[DEFAULT_MSG_LENGTH];
+                strncpy(msg, other.msg, DEFAULT_MSG_LENGTH);
+            } else {
+                msg = other.msg;
+            }
+        }
 
+    public:
+        const static size_t DEFAULT_MSG_LENGTH = 100;
+        int code;
+        char *msg;
+
+        Error(const int code, char *msg) : code(code), msg(msg) {}
+        Error() : code(SQLITE_OK), msg(new char[DEFAULT_MSG_LENGTH]) {}
+        Error(const Error& other) {
+            copy(other);
+        };
+
+        Error& operator=(const Error& other) {
+            if(this != &other) {
+                copy(other);
+            }
+
+            return *this;
+        }
+        operator bool() const {
+            return code == SQLITE_OK;
+        }
+
+        ~Error() {
+            if (msg) {
+                delete[] msg;
+            }
         }
     };
 
-    const Error OK(0, "");
+    const Error OK(SQLITE_OK, nullptr);
 
     class Database;
 
@@ -75,6 +106,7 @@ namespace sqlite {
 
         friend Error exec(Database &db, const char *sql, Results &res);
         friend Error exec(Database &db, const char *sql);
+        friend Error exec_impl(Database &db, const char *sql, Results &res);
     };
 
     class Statement {
@@ -109,30 +141,23 @@ namespace sqlite {
     }
 
     Error exec(Database &db, const char *sql) {
-        char **err_msg = new char *[1];
-        err_msg[0] = new char[100];
-        int status_code = sqlite3_exec(db.db, sql, my_special_callback, nullptr, err_msg);
-        if (status_code != SQLITE_OK) {
-            return Error(status_code, *err_msg);
+        Error err;
+        err.code = sqlite3_exec(db.db, sql, nullptr, nullptr, &err.msg);
+        if (err.code != SQLITE_OK) {
+            return err;
         }
-
-        delete err_msg[0];
-        delete[] err_msg;
 
         return OK;
     }
 
     Error exec(Database &db, const char *sql, Results &res) {
         res.m_results.clear();
-        char **err_msg = new char *[1];
-        err_msg[0] = new char[100];
-        int status_code = sqlite3_exec(db.db, sql, my_special_callback, &res, err_msg);
-        if (status_code != SQLITE_OK) {
-            return Error(status_code, *err_msg);
-        }
 
-        delete err_msg[0];
-        delete[] err_msg;
+        Error err;
+        err.code = sqlite3_exec(db.db, sql, my_special_callback, &res, &err.msg);
+        if (err.code != SQLITE_OK) {
+            return err;
+        }
 
         return OK;
     }
