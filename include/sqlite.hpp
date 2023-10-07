@@ -13,29 +13,38 @@ namespace sqlite {
 
     class Error {
     private:
-        void copy(const Error& other) {
+        static const size_t DEFAULT_MSG_LENGTH = 100;
+        void copy(const Error &other) {
             code = other.code;
             if (other.msg) {
                 msg = new char[DEFAULT_MSG_LENGTH];
                 strncpy(msg, other.msg, DEFAULT_MSG_LENGTH);
-            } else {
+            }
+            else {
                 msg = other.msg;
             }
         }
 
     public:
-        const static size_t DEFAULT_MSG_LENGTH = 100;
         int code;
         char *msg;
 
-        Error(const int code, char *msg) : code(code), msg(msg) {}
+        Error(const int _code, char *_msg) : code(_code) {
+            if (_msg) {
+                msg = new char[strlen(_msg) + 1];
+                strncpy(msg, _msg, strlen(_msg) + 1);
+            }
+            else {
+                msg = nullptr;
+            }
+        }
         Error() : code(SQLITE_OK), msg(new char[DEFAULT_MSG_LENGTH]) {}
-        Error(const Error& other) {
+        Error(const Error &other) {
             copy(other);
         };
 
-        Error& operator=(const Error& other) {
-            if(this != &other) {
+        Error &operator=(const Error &other) {
+            if (this != &other) {
                 copy(other);
             }
 
@@ -55,12 +64,13 @@ namespace sqlite {
     const Error OK(SQLITE_OK, nullptr);
 
     class Database;
+    class Statement;
 
     class Results {
     private:
         class ResultIterator {
         private:
-            std::map<std::string, std::string> raw;
+            std::map<std::string, std::string> m_raw;
         public:
             const ResultIterator &operator++();
 
@@ -92,29 +102,56 @@ namespace sqlite {
 
         friend int my_special_callback(void *res, int count, char **data, char **columns);
         friend Error exec(Database &db, const char *sql, Results &res);
+        friend Error exec(Database &db, const Statement &st, Results &res);
     };
 
     class Database {
     private:
-        sqlite3 *db;
+        sqlite3 *m_db;
     public:
         Database(const std::string &path, const ErrorTypes &type = ErrorTypes::STATUS_CODE) {
-            if (sqlite3_open(path.c_str(), &db) != SQLITE_OK) {
+            if (sqlite3_open(path.c_str(), &m_db) != SQLITE_OK) {
                 std::cerr << "Cannot create/open database: " << path << std::endl;
             }
         }
 
-        friend Error exec(Database &db, const char *sql, Results &res);
+        Database(const Database &other) {
+        }
+
+        ~Database() {
+            sqlite3_close(m_db);
+        }
+
         friend Error exec(Database &db, const char *sql);
-        friend Error exec_impl(Database &db, const char *sql, Results &res);
+        friend Error exec(Database &db, const Statement &st);
+        friend Error exec(Database &db, const char *sql, Results &res);
+        friend Error exec(Database &db, const Statement &st, Results &res);
     };
 
     class Statement {
+        std::string m_sql;
+        int m_bind_param_count;
+        static const char BIND_SYMBOL = '?';
     public:
-        Statement(const char *sql);
+        Statement(const char *sql)
+            : m_sql(sql), m_bind_param_count(std::count(m_sql.begin(), m_sql.end(), BIND_SYMBOL)) {}
 
-        template <typename T>
-        const Error &bind(const size_t index, const T &value);
+        Error bind(const size_t index, const std::string &value) {
+            if (index < m_bind_param_count) {
+                for (size_t i = 0, pos = 0; pos != std::string::npos; pos++, i++) {
+                    pos = m_sql.find(BIND_SYMBOL, pos);
+                    if (i == index) {
+                        m_sql.insert(pos, value);
+                        return OK;
+                    }
+                }
+            }
+
+            return Error(SQLITE_NOTFOUND, (char *)("Invalid bind parameter index"));
+        }
+
+        friend Error exec(Database &db, const Statement &st);
+        friend Error exec(Database &db, const Statement &st, Results &res);
     };
 
     class Transaction {
@@ -132,7 +169,7 @@ namespace sqlite {
 
         Results::iterator result;
         for (size_t i = 0; i < count; i++) {
-            result.raw[columns[i]] = data[i];
+            result.m_raw[columns[i]] = data[i];
         }
 
         results->m_results.push_back(result);
@@ -142,7 +179,7 @@ namespace sqlite {
 
     Error exec(Database &db, const char *sql) {
         Error err;
-        err.code = sqlite3_exec(db.db, sql, nullptr, nullptr, &err.msg);
+        err.code = sqlite3_exec(db.m_db, sql, nullptr, nullptr, &err.msg);
         if (err.code != SQLITE_OK) {
             return err;
         }
@@ -154,7 +191,29 @@ namespace sqlite {
         res.m_results.clear();
 
         Error err;
-        err.code = sqlite3_exec(db.db, sql, my_special_callback, &res, &err.msg);
+        err.code = sqlite3_exec(db.m_db, sql, my_special_callback, &res, &err.msg);
+        if (err.code != SQLITE_OK) {
+            return err;
+        }
+
+        return OK;
+    }
+
+    Error exec(Database &db, const Statement &st) {
+        Error err;
+        err.code = sqlite3_exec(db.m_db, st.m_sql.c_str(), nullptr, nullptr, &err.msg);
+        if (err.code != SQLITE_OK) {
+            return err;
+        }
+
+        return OK;
+    }
+
+    Error exec(Database &db, const Statement &st, Results &res) {
+        res.m_results.clear();
+
+        Error err;
+        err.code = sqlite3_exec(db.m_db, st.m_sql.c_str(), my_special_callback, &res, &err.msg);
         if (err.code != SQLITE_OK) {
             return err;
         }
